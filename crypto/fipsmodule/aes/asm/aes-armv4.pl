@@ -79,7 +79,10 @@ $code=<<___;
 @ Silence ARMv8 deprecated IT instruction warnings. This file is used by both
 @ ARMv7 and ARMv8 processors and does not use ARMv8 instructions. (ARMv8 AES
 @ instructions are in aesv8-armx.pl.)
+#if __ARM_ARCH__<7
+#else
 .arch  armv7-a
+#endif
 
 .text
 #if defined(__thumb2__) && !defined(__APPLE__)
