@@ -184,7 +184,10 @@ $code=<<___;
 @ Silence ARMv8 deprecated IT instruction warnings. This file is used by both
 @ ARMv7 and ARMv8 processors. It does have ARMv8-only code, but those
 @ instructions are manually-encoded. (See unsha256.)
+#if __ARM_ARCH__<7
+#else
 .arch  armv7-a
+#endif
 
 .text
 #if defined(__thumb2__)
