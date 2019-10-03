@@ -83,13 +83,6 @@ fn x25519_ecdh(
         out: &mut ops::EncodedPoint, scalar: &ops::Scalar, point: &ops::EncodedPoint,
         cpu_features: cpu::Features,
     ) {
-        #[cfg(target_arch = "arm")]
-        {
-            if cpu::arm::NEON.available(cpu_features) {
-                return x25519_neon(out, scalar, point);
-            }
-        }
-
         extern "C" {
             fn GFp_x25519_scalar_mult_generic(
                 out: &mut ops::EncodedPoint, scalar: &ops::Scalar, point: &ops::EncodedPoint,

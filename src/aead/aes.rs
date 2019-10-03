@@ -43,20 +43,6 @@ impl Key {
         };
 
         match detect_implementation(cpu_features) {
-            Implementation::HWAES => {
-                extern "C" {
-                    fn GFp_aes_hw_set_encrypt_key(
-                        user_key: *const u8, bits: libc::c_uint, key: &mut AES_KEY,
-                    ) -> ZeroMeansSuccess;
-                }
-                Result::from(unsafe {
-                    GFp_aes_hw_set_encrypt_key(
-                        bytes.as_ptr(),
-                        key_bits.as_usize_bits() as libc::c_uint,
-                        &mut key,
-                    )
-                })?;
-            },
 
             #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
             Implementation::VPAES => {
@@ -102,14 +88,6 @@ impl Key {
         let aliasing_mut: *mut Block = &mut a;
 
         match detect_implementation(self.cpu_features) {
-            Implementation::HWAES => {
-                extern "C" {
-                    fn GFp_aes_hw_encrypt(a: *const Block, r: *mut Block, key: &AES_KEY);
-                }
-                unsafe {
-                    GFp_aes_hw_encrypt(aliasing_const, aliasing_mut, &self.inner);
-                }
-            },
 
             #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
             Implementation::VPAES => {
@@ -160,32 +138,6 @@ impl Key {
         assert_eq!(blocks, polyfill::usize_from_u32(blocks_u32));
 
         match detect_implementation(self.cpu_features) {
-            Implementation::HWAES => {
-                extern "C" {
-                    fn GFp_aes_hw_ctr32_encrypt_blocks(
-                        input: *const u8, output: *mut u8, blocks: size_t, key: &AES_KEY,
-                        ivec: &Counter,
-                    );
-                }
-                unsafe {
-                    GFp_aes_hw_ctr32_encrypt_blocks(input, output, blocks, &self.inner, ctr);
-                }
-                ctr.increment_by_less_safe(blocks_u32);
-            },
-
-            #[cfg(target_arch = "arm")]
-            Implementation::BSAES => {
-                extern "C" {
-                    fn GFp_bsaes_ctr32_encrypt_blocks(
-                        input: *const u8, output: *mut u8, blocks: size_t, key: &AES_KEY,
-                        ivec: &Counter,
-                    );
-                }
-                unsafe {
-                    GFp_bsaes_ctr32_encrypt_blocks(input, output, blocks, &self.inner, ctr);
-                }
-                ctr.increment_by_less_safe(blocks_u32);
-            },
 
             _ => {
                 shift::shift_full_blocks(in_out, in_prefix_len, |input| {
@@ -208,7 +160,6 @@ impl Key {
     #[must_use]
     pub fn is_aes_hw(&self) -> bool {
         match detect_implementation(self.cpu_features) {
-            Implementation::HWAES => true,
             _ => false,
         }
     }
@@ -238,13 +189,9 @@ pub type Counter = nonce::Counter<BigEndian<u32>>;
 #[repr(C)] // Only so `Key` can be `#[repr(C)]`
 #[derive(Clone, Copy)]
 pub enum Implementation {
-    HWAES = 1,
 
     #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
     VPAES = 2,
-
-    #[cfg(target_arch = "arm")]
-    BSAES = 3,
 
     Fallback = 4,
 }
@@ -258,13 +205,6 @@ fn detect_implementation(cpu_features: cpu::Features) -> Implementation {
     {
         if cpu::intel::SSSE3.available(cpu_features) {
             return Implementation::VPAES;
-        }
-    }
-
-    #[cfg(target_arch = "arm")]
-    {
-        if cpu::arm::NEON.available(cpu_features) {
-            return Implementation::BSAES;
         }
     }
 
