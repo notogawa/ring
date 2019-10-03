@@ -41,7 +41,6 @@ include = [
     "crypto/constant_time_test.c",
     "crypto/cpu-intel.c",
     "crypto/crypto.c",
-    "crypto/curve25519/asm/x25519-asm-arm.S",
     "crypto/fipsmodule/aes/aes.c",
     "crypto/fipsmodule/aes/asm/aes-586.pl",
     "crypto/fipsmodule/aes/asm/aes-armv4.pl",

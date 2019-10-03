@@ -56,22 +56,7 @@ fn x25519_public_from_private(
 ) -> Result<(), error::Unspecified> {
     let public_out = public_out.try_into_()?;
 
-    #[cfg(target_arch = "arm")]
-    let cpu_features = private_key.cpu_features;
-
     let private_key = private_key.bytes_less_safe().try_into_()?;
-
-    #[cfg(target_arch = "arm")]
-    {
-        if cpu::arm::NEON.available(cpu_features) {
-            static MONTGOMERY_BASE_POINT: [u8; 32] = [
-                9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0,
-            ];
-            x25519_neon(public_out, private_key, &MONTGOMERY_BASE_POINT);
-            return Ok(());
-        }
-    }
 
     extern "C" {
         fn GFp_x25519_public_from_private_generic(
