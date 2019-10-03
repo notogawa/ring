@@ -104,6 +104,10 @@
 #  define __ARM_MAX_ARCH__ __ARM_ARCH__
 # endif
 
+#define STRINGIFY(s) XSTRINGIFY(s)
+#define XSTRINGIFY(s) #s
+# pragma message( "__ARM_ARCH__: " STRINGIFY(__ARM_ARCH__) )
+
 # if __ARM_MAX_ARCH__<__ARM_ARCH__
 #  error "__ARM_MAX_ARCH__ can't be less than __ARM_ARCH__"
 # elif __ARM_MAX_ARCH__!=__ARM_ARCH__
