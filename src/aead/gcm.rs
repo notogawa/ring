@@ -28,34 +28,6 @@ impl Key {
         });
 
         match detect_implementation(cpu_features) {
-            #[cfg(target_arch = "x86_64")]
-            Implementation::CLMUL if has_avx_movbe(cpu_features) => {
-                extern "C" {
-                    fn GFp_gcm_init_avx(key: &mut Key, h: &[u64; 2]);
-                }
-                unsafe {
-                    GFp_gcm_init_avx(&mut key, &h);
-                }
-            },
-
-            Implementation::CLMUL => {
-                extern "C" {
-                    fn GFp_gcm_init_clmul(key: &mut Key, h: &[u64; 2]);
-                }
-                unsafe {
-                    GFp_gcm_init_clmul(&mut key, &h);
-                }
-            },
-
-            #[cfg(any(target_arch = "arm"))]
-            Implementation::NEON => {
-                extern "C" {
-                    fn GFp_gcm_init_neon(key: &mut Key, h: &[u64; 2]);
-                }
-                unsafe {
-                    GFp_gcm_init_neon(&mut key, &h);
-                }
-            },
 
             Implementation::Fallback => {
                 extern "C" {
@@ -104,40 +76,6 @@ impl Context {
         let key_aliasing: *const GCM128_KEY = &self.inner.key;
 
         match detect_implementation(self.cpu_features) {
-            #[cfg(target_arch = "x86_64")]
-            Implementation::CLMUL if has_avx_movbe(self.cpu_features) => {
-                extern "C" {
-                    fn GFp_gcm_ghash_avx(
-                        ctx: &mut Context, h_table: *const GCM128_KEY, inp: *const u8, len: size_t,
-                    );
-                }
-                unsafe {
-                    GFp_gcm_ghash_avx(self, key_aliasing, input.as_ptr(), input.len());
-                }
-            },
-
-            Implementation::CLMUL => {
-                extern "C" {
-                    fn GFp_gcm_ghash_clmul(
-                        ctx: &mut Context, h_table: *const GCM128_KEY, inp: *const u8, len: size_t,
-                    );
-                }
-                unsafe {
-                    GFp_gcm_ghash_clmul(self, key_aliasing, input.as_ptr(), input.len());
-                }
-            },
-
-            #[cfg(any(target_arch = "arm"))]
-            Implementation::NEON => {
-                extern "C" {
-                    fn GFp_gcm_ghash_neon(
-                        ctx: &mut Context, h_table: *const GCM128_KEY, inp: *const u8, len: size_t,
-                    );
-                }
-                unsafe {
-                    GFp_gcm_ghash_neon(self, key_aliasing, input.as_ptr(), input.len());
-                }
-            },
 
             Implementation::Fallback => {
                 extern "C" {
@@ -158,24 +96,6 @@ impl Context {
         let key_aliasing: *const GCM128_KEY = &self.inner.key;
 
         match detect_implementation(self.cpu_features) {
-            Implementation::CLMUL => {
-                extern "C" {
-                    fn GFp_gcm_gmult_clmul(ctx: &mut Context, Htable: *const GCM128_KEY);
-                }
-                unsafe {
-                    GFp_gcm_gmult_clmul(self, key_aliasing);
-                }
-            },
-
-            #[cfg(any(target_arch = "arm"))]
-            Implementation::NEON => {
-                extern "C" {
-                    fn GFp_gcm_gmult_neon(ctx: &mut Context, Htable: *const GCM128_KEY);
-                }
-                unsafe {
-                    GFp_gcm_gmult_neon(self, key_aliasing);
-                }
-            },
 
             Implementation::Fallback => {
                 extern "C" {
@@ -198,7 +118,6 @@ impl Context {
     #[cfg(target_arch = "x86_64")]
     pub(super) fn is_avx2(&self, cpu_features: cpu::Features) -> bool {
         match detect_implementation(cpu_features) {
-            Implementation::CLMUL => has_avx_movbe(self.cpu_features),
             _ => false,
         }
     }
@@ -229,29 +148,11 @@ struct GCM128_CONTEXT {
 }
 
 enum Implementation {
-    CLMUL,
-
-    #[cfg(target_arch = "arm")]
-    NEON,
-
     Fallback,
 }
 
 #[inline]
 fn detect_implementation(cpu: cpu::Features) -> Implementation {
-    if (cpu::intel::FXSR.available(cpu) && cpu::intel::PCLMULQDQ.available(cpu))
-        || cpu::arm::PMULL.available(cpu)
-    {
-        return Implementation::CLMUL;
-    }
-
-    #[cfg(target_arch = "arm")]
-    {
-        if cpu::arm::NEON.available(cpu) {
-            return Implementation::NEON;
-        }
-    }
-
     Implementation::Fallback
 }
 
