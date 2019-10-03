@@ -197,9 +197,6 @@ pub enum Implementation {
 }
 
 fn detect_implementation(cpu_features: cpu::Features) -> Implementation {
-    if cpu::intel::AES.available(cpu_features) || cpu::arm::AES.available(cpu_features) {
-        return Implementation::HWAES;
-    }
 
     #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
     {

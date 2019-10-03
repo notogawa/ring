@@ -48,7 +48,6 @@ include = [
     "crypto/fipsmodule/aes/asm/aesni-x86.pl",
     "crypto/fipsmodule/aes/asm/aesni-x86_64.pl",
     "crypto/fipsmodule/aes/asm/aesv8-armx.pl",
-    "crypto/fipsmodule/aes/asm/bsaes-armv7.pl",
     "crypto/fipsmodule/aes/asm/bsaes-x86_64.pl",
     "crypto/fipsmodule/aes/asm/vpaes-x86.pl",
     "crypto/fipsmodule/aes/asm/vpaes-x86_64.pl",
